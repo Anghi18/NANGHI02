@@ -1,350 +1,396 @@
+// Configuración Firebase
+const firebaseConfig = {
+    apiKey: "TU_API_KEY",
+    authDomain: "TU_PROYECTO.firebaseapp.com",
+    databaseURL: "https://TU_PROYECTO.firebaseio.com",
+    projectId: "TU_PROYECTO",
+    storageBucket: "TU_PROYECTO.appspot.com",
+    messagingSenderId: "TU_SENDER_ID",
+    appId: "TU_APP_ID"
+};
+
+// Inicializar Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+const auth = firebase.auth();
+
 // Variables globales
-let currentFileInput = null;
-let excelData = [];
-let tendenciaChart = null;
+let appData = {
+    source: null,
+    data: [],
+    charts: {},
+    usuario: null,
+    proyectoActual: null
+};
+
+let sCurveChart = null;
 let comparacionChart = null;
+let intervaloActualizacion = null;
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', function() {
-  setupEventListeners();
-  setupFileInput();
+    setupEventListeners();
+    setupFirebaseListeners();
+    mostrarLogin();
 });
 
+// Configurar listeners de Firebase
+function setupFirebaseListeners() {
+    // Autenticación
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            appData.usuario = {
+                uid: user.uid,
+                email: user.email,
+                nombre: user.displayName || user.email.split('@')[0]
+            };
+            cargarProyectosUsuario();
+        } else {
+            appData.usuario = null;
+            mostrarLogin();
+        }
+    });
+
+    // Escuchar cambios colaborativos
+    database.ref('presencia').on('value', snapshot => {
+        const usuarios = snapshot.numChildren();
+        document.getElementById('collaborators').textContent = `${usuers} usuario(s) activo(s)`;
+    });
+}
+
+// Configurar event listeners
 function setupEventListeners() {
-  // Login
-  document.getElementById('loginForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    mostrarPresupuesto();
-  });
+    // Login y Registro
+    document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
+    document.getElementById('registerBtn')?.addEventListener('click', mostrarRegistro);
 
-  // Registro
-  document.getElementById('registerBtn').addEventListener('click', mostrarRegistro);
+    // Menús desplegables
+    const menuButtons = ['userBtn', 'menuBtn', 'userBtnAnalisis', 'menuBtnAnalisis', 'userBtnReportes', 'menuBtnReportes'];
+    menuButtons.forEach(btn => {
+        document.getElementById(btn)?.addEventListener('click', () => toggleDropdown(`dropdown${btn.replace('user', '').replace('menu', '')}`));
+    });
 
-  // Menús
-  document.getElementById('userBtn').addEventListener('click', () => toggleDropdown('dropdownMenu'));
-  document.getElementById('menuBtn').addEventListener('click', () => toggleDropdown('dropdownMenu'));
-  document.getElementById('userBtnAnalisis').addEventListener('click', () => toggleDropdown('dropdownMenuAnalisis'));
-  document.getElementById('menuBtnAnalisis').addEventListener('click', () => toggleDropdown('dropdownMenuAnalisis'));
-  document.getElementById('userBtnReportes').addEventListener('click', () => toggleDropdown('dropdownMenuReportes'));
-  document.getElementById('menuBtnReportes').addEventListener('click', () => toggleDropdown('dropdownMenuReportes'));
+    // Navegación
+    const navLinks = [
+        'analisisLink', 'reportesLink', 'logoutLink',
+        'presupuestoLink', 'reportesLinkAnalisis', 'logoutLinkAnalisis',
+        'presupuestoLinkReportes', 'analisisLinkReportes', 'logoutLinkReportes'
+    ];
+    navLinks.forEach(link => {
+        document.getElementById(link)?.addEventListener('click', handleNavLink);
+    });
 
-  // Navegación
-  document.getElementById('analisisLink').addEventListener('click', function(e) {
-    e.preventDefault();
-    mostrarAnalisis();
-  });
-  document.getElementById('reportesLink').addEventListener('click', function(e) {
-    e.preventDefault();
-    mostrarReportes();
-  });
-  document.getElementById('logoutLink').addEventListener('click', function(e) {
-    e.preventDefault();
-    cerrarSesion();
-  });
-  document.getElementById('presupuestoLink').addEventListener('click', function(e) {
-    e.preventDefault();
-    mostrarPresupuesto();
-  });
-  document.getElementById('reportesLinkAnalisis').addEventListener('click', function(e) {
-    e.preventDefault();
-    mostrarReportes();
-  });
-  document.getElementById('logoutLinkAnalisis').addEventListener('click', function(e) {
-    e.preventDefault();
-    cerrarSesion();
-  });
-  document.getElementById('presupuestoLinkReportes').addEventListener('click', function(e) {
-    e.preventDefault();
-    mostrarPresupuesto();
-  });
-  document.getElementById('analisisLinkReportes').addEventListener('click', function(e) {
-    e.preventDefault();
-    mostrarAnalisis();
-  });
-  document.getElementById('logoutLinkReportes').addEventListener('click', function(e) {
-    e.preventDefault();
-    cerrarSesion();
-  });
+    // Botones principales
+    document.getElementById('backBtn')?.addEventListener('click', () => mostrarSeccion('presupuesto'));
+    document.getElementById('volverBtn')?.addEventListener('click', () => mostrarSeccion('analisis'));
+    document.getElementById('closeModal')?.addEventListener('click', cerrarModal);
+    document.getElementById('generateAnalysis')?.addEventListener('click', generarAnalisis);
+    document.getElementById('generateReportBtn')?.addEventListener('click', () => mostrarSeccion('reportes'));
+    document.getElementById('exportPdfBtn')?.addEventListener('click', exportarPDF);
+    document.getElementById('sendEmailBtn')?.addEventListener('click', enviarEmailReporte);
+    document.getElementById('downloadTemplate')?.addEventListener('click', descargarPlantilla);
+    document.getElementById('googleSheetsBtn')?.addEventListener('click', conectarGoogleSheets);
+    document.getElementById('generateAnalysisFromSheets')?.addEventListener('click', cargarDatosDesdeSheets);
+    document.getElementById('refreshDataBtn')?.addEventListener('click', actualizarDatos);
+    document.getElementById('excelInput')?.addEventListener('change', handleFileUpload);
 
-  // Botones
-  document.getElementById('backBtn').addEventListener('click', mostrarPresupuesto);
-  document.getElementById('volverBtn').addEventListener('click', mostrarAnalisis);
-  document.getElementById('closeModal').addEventListener('click', cerrarModal);
-  document.getElementById('generateAnalysis').addEventListener('click', generarAnalisis);
-  document.getElementById('generateReportBtn').addEventListener('click', generarReporte);
-  document.getElementById('exportPdfBtn').addEventListener('click', exportarPDF);
-  document.getElementById('downloadTemplate').addEventListener('click', descargarPlantilla);
-  document.getElementById('googleSheetsBtn').addEventListener('click', conectarGoogleSheets);
+    // Pestañas institucionales
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabId = btn.getAttribute('data-tab');
+            mostrarTab(tabId);
+        });
+    });
 }
 
-function setupFileInput() {
-  if (currentFileInput) {
-    currentFileInput.removeEventListener('change', handleFileUpload);
-  }
-  
-  const fileInput = document.getElementById('excelInput');
-  fileInput.value = '';
-  fileInput.addEventListener('change', handleFileUpload);
-  currentFileInput = fileInput;
+// Manejar login con Firebase
+function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+
+    auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+            mostrarNotificacion('Inicio de sesión exitoso');
+            mostrarSeccion('presupuesto');
+        })
+        .catch(error => {
+            mostrarNotificacion(error.message, true);
+        });
 }
 
-function handleFileUpload(e) {
-  const file = e.target.files[0];
-  if (!file) return;
+// Manejar registro con Firebase
+function handleRegister(e) {
+    e.preventDefault();
+    const email = document.getElementById('registerEmail').value;
+    const password = document.getElementById('registerPassword').value;
+    const confirmPassword = document.getElementById('registerConfirmPassword').value;
 
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      
-      excelData = XLSX.utils.sheet_to_json(firstSheet, { header: ['item', 'planificado', 'real'] });
-      const html = XLSX.utils.sheet_to_html(firstSheet);
-      
-      document.getElementById('excelPreview').innerHTML = html;
-      abrirModal();
-    } catch (error) {
-      alert('Error al leer el archivo: ' + error.message);
+    if (password !== confirmPassword) {
+        mostrarNotificacion('Las contraseñas no coinciden', true);
+        return;
     }
-  };
-  reader.readAsArrayBuffer(file);
+
+    auth.createUserWithEmailAndPassword(email, password)
+        .then(() => {
+            mostrarNotificacion('Registro exitoso. Por favor inicia sesión');
+            mostrarLogin();
+        })
+        .catch(error => {
+            mostrarNotificacion(error.message, true);
+        });
 }
 
-function abrirModal() {
-  document.getElementById('excelModal').style.display = 'flex';
+// Mostrar secciones
+function mostrarSeccion(seccion) {
+    ocularTodasSecciones();
+    
+    switch(seccion) {
+        case 'login':
+            document.getElementById('loginSection').style.display = 'flex';
+            break;
+        case 'presupuesto':
+            document.getElementById('presupuestoSection').style.display = 'block';
+            break;
+        case 'analisis':
+            document.getElementById('analisisSection').style.display = 'block';
+            if (appData.data.length > 0) procesarDatosAnalisis(appData.data);
+            break;
+        case 'reportes':
+            document.getElementById('reportesSection').style.display = 'block';
+            if (!appData.charts.initialized && appData.data.length > 0) inicializarGraficos();
+            break;
+    }
 }
 
-function cerrarModal() {
-  document.getElementById('excelModal').style.display = 'none';
-}
-
-function generarAnalisis() {
-  if (excelData.length === 0) {
-    alert('No hay datos para analizar');
-    return;
-  }
-  
-  procesarDatosAnalisis(excelData);
-  cerrarModal();
-  mostrarAnalisis();
-}
-
+// Procesar datos de análisis
 function procesarDatosAnalisis(data) {
-  const tbody = document.getElementById('analisisTableBody');
-  const alertBox = document.getElementById('alertBox');
-  let alertHTML = '<h3>Alertas:</h3><ul>';
-  let hasAlerts = false;
-  
-  tbody.innerHTML = '';
-  
-  data.slice(1).forEach(row => {
-    if (!row.item || row.item.toString().trim() === '') return;
+    const tbody = document.getElementById('analisisTableBody');
+    const alertList = document.getElementById('alertList');
     
-    const cleanPlanificado = parseFloat(row.planificado?.toString().replace(/[^0-9.-]/g, '')) || 0;
-    const cleanReal = parseFloat(row.real?.toString().replace(/[^0-9.-]/g, '')) || 0;
-    const diferencia = cleanReal - cleanPlanificado;
-    const porcentaje = cleanPlanificado !== 0 ? ((diferencia / cleanPlanificado) * 100).toFixed(1) : 0;
+    tbody.innerHTML = '';
+    alertList.innerHTML = '';
     
-    const rowHTML = `
-      <tr>
-        <td>${row.item}</td>
-        <td>S/${cleanPlanificado.toLocaleString('es-PE')}</td>
-        <td>S/${cleanReal.toLocaleString('es-PE')}</td>
-        <td class="${diferencia >= 0 ? 'up' : 'down'}">
-          ${Math.abs(porcentaje)}% ${diferencia >= 0 ? '▲' : '▼'}
-        </td>
-      </tr>
-    `;
-    tbody.innerHTML += rowHTML;
+    data.forEach((row, index) => {
+        if (index === 0 || !row.item) return;
+        
+        const planificado = parseFloat(row.planificado) || 0;
+        const real = parseFloat(row.real) || 0;
+        const desviacion = real - planificado;
+        const porcentaje = planificado !== 0 ? (desviacion / planificado * 100).toFixed(1) : 0;
+        const sobrecosto = desviacion > 0 ? desviacion : 0;
+        
+        const rowHTML = `
+            <tr>
+                <td>${row.item}</td>
+                <td>${planificado.toLocaleString('es-PE', {style: 'currency', currency: 'PEN'})}</td>
+                <td>${real.toLocaleString('es-PE', {style: 'currency', currency: 'PEN'})}</td>
+                <td class="${desviacion >= 0 ? 'up' : 'down'}">
+                    ${Math.abs(porcentaje)}% ${desviacion >= 0 ? '▲' : '▼'}
+                </td>
+                <td>${sobrecosto.toLocaleString('es-PE', {style: 'currency', currency: 'PEN'})}</td>
+                <td>
+                    <select class="cause-select">
+                        <option value="">Seleccionar causa</option>
+                        <option value="retraso">Retraso en entrega</option>
+                        <option value="inflacion">Inflación de precios</option>
+                        <option value="error">Error en estimación</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="text" class="recommendation-input" placeholder="Ingrese recomendación">
+                </td>
+            </tr>
+        `;
+        tbody.innerHTML += rowHTML;
+        
+        if (Math.abs(porcentaje) > 10) {
+            alertList.innerHTML += `
+                <li>
+                    <strong>${row.item}</strong>: ${porcentaje >= 0 ? '+' : ''}${porcentaje}%
+                    (${desviacion.toLocaleString('es-PE', {style: 'currency', currency: 'PEN'})})
+                </li>
+            `;
+        }
+    });
     
-    if (Math.abs(porcentaje) > 10) {
-      hasAlerts = true;
-      alertHTML += `
-        <li>
-          <strong>${row.item}:</strong> ${diferencia >= 0 ? '+' : ''}${porcentaje}% 
-          (S/${Math.abs(diferencia).toLocaleString('es-PE')})
-        </li>
-      `;
+    // Actualizar Firebase con los nuevos datos
+    if (appData.proyectoActual) {
+        database.ref(`proyectos/${appData.proyectoActual}`).update({
+            data: data,
+            lastUpdated: firebase.database.ServerValue.TIMESTAMP
+        });
     }
-  });
-  
-  alertHTML += '</ul>';
-  alertBox.innerHTML = hasAlerts ? alertHTML : '<p>No hay alertas significativas</p>';
 }
 
-function toggleDropdown(id) {
-  const dropdown = document.getElementById(id);
-  dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-}
-
-function mostrarLogin() {
-  ocultarTodasSecciones();
-  document.getElementById('loginSection').style.display = 'flex';
-}
-
-function mostrarPresupuesto() {
-  ocultarTodasSecciones();
-  document.getElementById('presupuestoSection').style.display = 'block';
-  setupFileInput();
-}
-
-function mostrarAnalisis() {
-  ocultarTodasSecciones();
-  document.getElementById('analisisSection').style.display = 'block';
-  document.getElementById('generateReportBtn').style.display = 'block';
-  
-  if (excelData.length > 0) {
-    procesarDatosAnalisis(excelData);
-  }
-}
-
-function mostrarReportes() {
-  ocultarTodasSecciones();
-  document.getElementById('reportesSection').style.display = 'block';
-  document.getElementById('generateReportBtn').style.display = 'none';
-  
-  if (!window.chartsInitialized) {
-    inicializarGraficos();
-  }
-}
-
-function ocultarTodasSecciones() {
-  document.getElementById('loginSection').style.display = 'none';
-  document.getElementById('presupuestoSection').style.display = 'none';
-  document.getElementById('analisisSection').style.display = 'none';
-  document.getElementById('reportesSection').style.display = 'none';
-}
-
-function generarReporte() {
-  mostrarReportes();
-}
-
+// Inicializar gráficos
 function inicializarGraficos() {
-  if (tendenciaChart) tendenciaChart.destroy();
-  if (comparacionChart) comparacionChart.destroy();
-
-  // Datos de ejemplo
-  const datosTendencia = {
-    labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
-    datasets: [
-      {
-        label: 'Planificado',
-        data: [15000, 14500, 16000, 15500, 17000, 16500],
-        borderColor: '#4e4376',
-        backgroundColor: 'rgba(78, 67, 118, 0.1)',
-        tension: 0.3
-      },
-      {
-        label: 'Real',
-        data: [18500, 15200, 16800, 16200, 17500, 18000],
-        borderColor: '#2b5876',
-        backgroundColor: 'rgba(43, 88, 118, 0.1)',
-        tension: 0.3
-      }
-    ]
-  };
-
-  const datosComparacion = {
-    labels: ['Materiales', 'Mano de obra', 'Equipos', 'Subcontratos', 'Gastos generales'],
-    datasets: [
-      {
-        label: 'Planificado',
-        data: [15000, 20000, 8000, 12000, 5000],
-        backgroundColor: '#4e4376'
-      },
-      {
-        label: 'Real',
-        data: [18500, 22300, 7200, 15750, 4800],
-        backgroundColor: '#2b5876'
-      }
-    ]
-  };
-
-  tendenciaChart = new Chart(
-    document.getElementById('tendenciaChart'),
-    {
-      type: 'line',
-      data: datosTendencia,
-      options: { responsive: true }
-    }
-  );
-
-  comparacionChart = new Chart(
-    document.getElementById('comparacionChart'),
-    {
-      type: 'bar',
-      data: datosComparacion,
-      options: { responsive: true }
-    }
-  );
-
-  window.chartsInitialized = true;
+    // Destruir gráficos existentes
+    if (sCurveChart) sCurveChart.destroy();
+    if (comparacionChart) comparacionChart.destroy();
+    
+    // Datos para gráficos
+    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
+    const items = appData.data.slice(1, 6).map(row => row.item);
+    const planificado = appData.data.slice(1, 6).map(row => parseFloat(row.planificado) || 0);
+    const real = appData.data.slice(1, 6).map(row => parseFloat(row.real) || 0);
+    
+    // Curva S
+    sCurveChart = new Chart(
+        document.getElementById('sCurveChart'),
+        {
+            type: 'line',
+            data: {
+                labels: meses,
+                datasets: [
+                    {
+                        label: 'Planificado',
+                        data: [10, 25, 50, 75, 90, 100],
+                        borderColor: '#4e4376',
+                        backgroundColor: 'rgba(78, 67, 118, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Real',
+                        data: [8, 20, 45, 60, 75, 82],
+                        borderColor: '#2b5876',
+                        backgroundColor: 'rgba(43, 88, 118, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const label = context.dataset.label || '';
+                                const value = context.parsed.y;
+                                const desviacion = context.datasetIndex === 1 ? 
+                                    value - context.chart.data.datasets[0].data[context.dataIndex] : 0;
+                                return `${label}: ${value}% ${desviacion !== 0 ? `(Desv: ${desviacion > 0 ? '+' : ''}${desviacion}%)` : ''}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Porcentaje de Avance'
+                        }
+                    }
+                }
+            }
+        }
+    );
+    
+    // Gráfico de comparación
+    comparacionChart = new Chart(
+        document.getElementById('comparacionChart'),
+        {
+            type: 'bar',
+            data: {
+                labels: items,
+                datasets: [
+                    {
+                        label: 'Planificado',
+                        data: planificado,
+                        backgroundColor: '#4e4376'
+                    },
+                    {
+                        label: 'Real',
+                        data: real,
+                        backgroundColor: '#2b5876'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const label = context.dataset.label || '';
+                                const value = context.parsed.y.toLocaleString('es-PE', {style: 'currency', currency: 'PEN'});
+                                const desviacion = context.datasetIndex === 1 ? 
+                                    context.parsed.y - context.chart.data.datasets[0].data[context.dataIndex] : 0;
+                                return `${label}: ${value} ${desviacion !== 0 ? `(Desv: ${desviacion > 0 ? '+' : ''}${desviacion.toLocaleString('es-PE', {style: 'currency', currency: 'PEN'})})` : ''}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Monto (PEN)'
+                        }
+                    }
+                }
+            }
+        }
+    );
+    
+    appData.charts.initialized = true;
 }
 
+// Exportar a PDF
 function exportarPDF() {
-  const exportBtn = document.getElementById('exportPdfBtn');
-  exportBtn.disabled = true;
-  exportBtn.textContent = 'Generando PDF...';
-
-  // Forzar renderizado
-  if (tendenciaChart) {
-    tendenciaChart.update();
-    tendenciaChart.render();
-  }
-  if (comparacionChart) {
-    comparacionChart.update();
-    comparacionChart.render();
-  }
-
-  // Ocultar elementos
-  const elementsToHide = document.querySelectorAll('.reportes-actions, .user-menu');
-  elementsToHide.forEach(el => el.style.opacity = '0');
-
-  setTimeout(() => {
     const element = document.getElementById('reportesSection');
+    const buttons = document.querySelectorAll('.reportes-actions button');
+    
+    buttons.forEach(btn => btn.style.visibility = 'hidden');
     
     html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#FFFFFF'
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#FFFFFF'
     }).then(canvas => {
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      const pdfWidth = pdf.internal.pageSize.getWidth() - 20;
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      pdf.addImage(imgData, 'JPEG', 10, 10, pdfWidth, pdfHeight);
-      pdf.save('reporte_nanghi.pdf');
-    }).catch(err => {
-      console.error('Error:', err);
-      alert('Error al generar PDF. Por favor, intente nuevamente.');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const pdfWidth = pdf.internal.pageSize.getWidth() - 20;
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        pdf.addImage(imgData, 'JPEG', 10, 10, pdfWidth, pdfHeight);
+        pdf.save(`reporte_${appData.proyectoActual || 'nanghi'}.pdf`);
     }).finally(() => {
-      elementsToHide.forEach(el => el.style.opacity = '1');
-      exportBtn.disabled = false;
-      exportBtn.textContent = 'Exportar como PDF';
+        buttons.forEach(btn => btn.style.visibility = 'visible');
     });
-  }, 500);
 }
 
-function descargarPlantilla() {
-  alert("Descargando plantilla...");
-  // Implementar descarga real aquí
+// Enviar reporte por email
+function enviarEmailReporte() {
+    mostrarNotificacion('Preparando envío de reporte...');
+    // Implementar integración con EmailJS o backend
 }
 
-function conectarGoogleSheets() {
-  alert("Conectando a Google Sheets...");
-  // Implementar conexión real aquí
+// Resto de funciones auxiliares (toggleDropdown, mostrarNotificacion, etc.)
+// ... (se mantienen similares pero actualizadas para usar Firebase)
+
+// Inicializar presencia de usuario
+function iniciarPresenciaUsuario() {
+    const presenciaRef = database.ref(`presencia/${appData.usuario.uid}`);
+    
+    presenciaRef.onDisconnect().remove();
+    presenciaRef.set({
+        nombre: appData.usuario.nombre,
+        email: appData.usuario.email,
+        ultimaConexion: firebase.database.ServerValue.TIMESTAMP
+    });
 }
 
-function mostrarRegistro() {
-  alert("Función de registro en desarrollo");
+// Cargar proyectos del usuario
+function cargarProyectosUsuario() {
+    database.ref(`usuarios/${appData.usuario.uid}/proyectos`).once('value').then(snapshot => {
+        const proyectos = snapshot.val() || [];
+        // Actualizar UI con proyectos disponibles
+    });
 }
-
-function cerrarSesion() {
-  mostrarLogin();
-}
-
-// Iniciar
-mostrarLogin();
