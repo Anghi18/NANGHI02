@@ -1,153 +1,230 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>App NANGHI</title>
-  <link rel="stylesheet" href="styles.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App NANGMI - Gestión de Proyectos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Interfaz Login -->
-  <section id="loginSection" class="login-container">
-    <div class="login-box">
-      <div class="login-header">
-        <img src="assets/logo.jpeg" alt="Logo" class="logo">
-        <h2>Iniciar sesión</h2>
-      </div>
-      <form id="loginForm">
-        <input type="email" id="loginEmail" placeholder="Correo electrónico" required>
-        <input type="password" id="loginPassword" placeholder="Contraseña" required>
-        <button type="submit">Iniciar sesión</button>
-      </form>
-      <div class="new-user">
-        <p>¿No tienes cuenta?</p>
-        <button id="registerBtn">Crear cuenta</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- Interfaz Carga Presupuesto -->
-  <section id="presupuestoSection" class="container">
-    <header class="top-bar">
-      <div class="logo-container">
-        <img src="assets/logo.jpeg" alt="Logo" class="logo">
-        <span>Cargar presupuesto</span>
-      </div>
-      <div class="user-menu">
-        <button class="menu-button" id="userBtn">👤</button>
-        <button class="menu-button" id="menuBtn">☰</button>
-        <div id="dropdownMenu" class="dropdown">
-          <a href="#" id="analisisLink">Análisis</a>
-          <a href="#" id="reportesLink">Reportes</a>
-          <a href="#" id="logoutLink">Cerrar sesión</a>
+    <!-- Interfaz login -->
+    <section id="loginSection" class="login-container animate__animated animate__fadeIn">
+        <div class="login-box">
+            <div class="login-header">
+                <img src="assets/logo.jpeg" alt="Logo" class="logo animate__animated animate__bounceIn">
+                <h2>Iniciar sesión</h2>
+            </div>
+            <form id="loginForm">
+                <input type="email" id="loginEmail" placeholder="Correo electrónico" required>
+                <input type="password" id="loginPassword" placeholder="Contraseña" required>
+                <button type="submit" class="animate__animated animate__pulse">Iniciar sesión</button>
+            </form>
+            <div class="new-user">
+                <p>¿No tienes cuenta?</p>
+                <button id="registerBtn">Crear cuenta</button>
+            </div>
         </div>
-      </div>
-    </header>
-    
-    <main class="content">
-      <h1>Cargar presupuesto</h1>
-      <div class="button-group">
-        <button class="download-btn" id="downloadTemplate">Descargar plantilla</button>
-        <label class="upload-btn">
-          <input type="file" id="excelInput" accept=".xlsx,.xls" hidden>
-          Subir archivo Excel
-        </label>
-        <button class="google-btn" id="googleSheetsBtn">Conectar Google Sheets</button>
-      </div>
-    </main>
+    </section>
 
-    <!-- Modal para Excel -->
-    <div id="excelModal" class="modal">
-      <div class="modal-content">
-        <span class="close" id="closeModal">&times;</span>
-        <h3>Vista previa del archivo</h3>
-        <div id="excelPreview" class="excel-preview"></div>
-        <button class="generate-btn" id="generateAnalysis">Generar análisis</button>
-      </div>
-    </div>
-  </section>
+    <!-- Interfaz Carga Presupuesto -->
+    <section id="presupuestoSection" class="container">
+        <header class="top-bar">
+            <div class="logo-container">
+                <img src="assets/logo.jpeg" alt="Logo" class="logo">
+                <span>Cargar presupuesto</span>
+            </div>
+            <div class="user-menu">
+                <button class="menu-button" id="userBtn"><i class="fas fa-user-circle"></i></button>
+                <div id="dropdownMenu" class="dropdown">
+                    <a href="#" id="analisisLink"><i class="fas fa-chart-bar"></i> Análisis</a>
+                    <a href="#" id="reportesLink"><i class="fas fa-file-alt"></i> Reportes</a>
+                    <a href="#" id="logoutLink"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
+                </div>
+            </div>
+        </header>
 
-  <!-- Interfaz Análisis -->
-  <section id="analisisSection" class="container analysis-section">
-    <header class="top-bar">
-      <div class="logo-container">
-        <img src="assets/logo.jpeg" alt="Logo" class="logo small-logo">
-        <span>Análisis de desviaciones</span>
-      </div>
-      <div class="user-menu">
-        <button class="menu-button" id="userBtnAnalisis">👤</button>
-        <button class="menu-button" id="menuBtnAnalisis">☰</button>
-        <div id="dropdownMenuAnalisis" class="dropdown">
-          <a href="#" id="presupuestoLink">Presupuesto</a>
-          <a href="#" id="reportesLinkAnalisis">Reportes</a>
-          <a href="#" id="logoutLinkAnalisis">Cerrar sesión</a>
+        <main class="content">
+            <h1 class="animate__animated animate__fadeInDown">Cargar presupuesto</h1>
+            <div class="dashboard-kpis animate__animated animate__fadeIn">
+                <div class="kpi-card">
+                    <h6>PROYECTOS ACTIVOS</h6>
+                    <h2 id="activeProjects">3</h2>
+                </div>
+                <div class="kpi-card">
+                    <h6>ÚLTIMA ACTUALIZACIÓN</h6>
+                    <h2 id="lastUpdate">Hoy</h2>
+                </div>
+            </div>
+            
+            <div class="button-group animate__animated animate__fadeInUp">
+                <button class="download-btn" id="downloadTemplate">
+                    <i class="fas fa-download"></i> Descargar plantilla
+                </button>
+                <label for="excelInput" class="upload-btn">
+                    <i class="fas fa-upload"></i> Subir archivo Excel
+                </label>
+                <input type="file" id="excelInput" accept=".xlsx,.xls" hidden>
+                <button class="google-btn" id="googleSheetsBtn">
+                    <i class="fab fa-google"></i> Conectar Google Sheets
+                </button>
+            </div>
+            <button class="generate-btn animate__animated animate__pulse animate__infinite" id="generateAnalysisFromSheets">
+                <i class="fas fa-magic"></i> Generar análisis
+            </button>
+        </main>
+
+        <!-- Modal para Excel -->
+        <div id="excelModal" class="modal">
+            <div class="modal-content animate__animated animate__zoomIn">
+                <span class="close" id="closeModal">&times;</span>
+                <div id="excelPreview" class="excel-preview"></div>
+                <button class="generate-btn" id="generateAnalysis">
+                    <i class="fas fa-chart-line"></i> Generar análisis
+                </button>
+            </div>
         </div>
-      </div>
-    </header>
-    
-    <main class="analysis-content">
-      <h1>Análisis de desviaciones de costos</h1>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Ítems de costos</th>
-              <th>Planificado</th>
-              <th>Real</th>
-              <th>Desviación</th>
-            </tr>
-          </thead>
-          <tbody id="analisisTableBody"></tbody>
-        </table>
-      </div>
-      <div id="alertBox" class="alert-box"></div>
-    </main>
-    <button id="backBtn" class="back-btn">← Volver</button>
-    <button id="generateReportBtn" class="floating-btn">Generar Reporte</button>
-  </section>
+    </section>
 
-  <!-- Interfaz Reportes -->
-  <section id="reportesSection" class="container reportes-section">
-    <header class="top-bar">
-      <div class="logo-container">
-        <img src="assets/logo.jpeg" alt="Logo" class="logo small-logo">
-        <span>Generación de Reportes</span>
-      </div>
-      <div class="user-menu">
-        <button class="menu-button" id="userBtnReportes">👤</button>
-        <button class="menu-button" id="menuBtnReportes">☰</button>
-        <div id="dropdownMenuReportes" class="dropdown">
-          <a href="#" id="presupuestoLinkReportes">Presupuesto</a>
-          <a href="#" id="analisisLinkReportes">Análisis</a>
-          <a href="#" id="logoutLinkReportes">Cerrar sesión</a>
-        </div>
-      </div>
-    </header>
-    
-    <main class="reportes-content">
-      <h1>Generación de Reportes</h1>
-      <div class="chart-container">
-        <h2>Tendencia de Costos (Últimos 6 meses)</h2>
-        <canvas id="tendenciaChart"></canvas>
-      </div>
-      <div class="chart-container">
-        <h2>Comparación por Partida</h2>
-        <canvas id="comparacionChart"></canvas>
-      </div>
-      <div class="reportes-actions">
-        <button id="volverBtn" class="action-btn">← Volver</button>
-        <button id="exportPdfBtn" class="action-btn">Exportar como PDF</button>
-      </div>
-    </main>
-  </section>
+    <!-- Interfaz Analysis -->
+    <section id="analisisSection" class="container analysis-section">
+        <header class="top-bar">
+            <div class="logo-container">
+                <img src="assets/logo.jpeg" alt="Logo" class="logo small-logo">
+                <span>Análisis de desviaciones</span>
+            </div>
+            <div class="user-menu">
+                <button class="menu-button" id="userBtnAnalisis"><i class="fas fa-user-circle"></i></button>
+                <div id="dropdownMenuAnalisis" class="dropdown">
+                    <a href="#" id="presupuestoLink"><i class="fas fa-file-import"></i> Presupuesto</a>
+                    <a href="#" id="reportesLinkAnalisis"><i class="fas fa-file-alt"></i> Reportes</a>
+                    <a href="#" id="logoutLinkAnalisis"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
+                </div>
+            </div>
+        </header>
 
-  <script>
-    window.jsPDF = window.jspdf.jsPDF;
-  </script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
-  <script src="script.js" defer></script>
+        <main class="analysis-content">
+            <h1 class="animate__animated animate__fadeIn">Análisis de desviaciones de costos</h1>
+            
+            <div class="table-container animate__animated animate__fadeInUp">
+                <table id="analisisTable">
+                    <thead>
+                        <tr>
+                            <th>Ítems de costos</th>
+                            <th>Planificado</th>
+                            <th>Real</th>
+                            <th>Desviación</th>
+                            <th>Sobrecosto</th>
+                            <th>Causa</th>
+                            <th>Recomendación</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analisisTableBody"></tbody>
+                </table>
+            </div>
+            
+            <div id="alertBox" class="alert-box animate__animated animate__fadeIn">
+                <h3><i class="fas fa-exclamation-triangle"></i> Alertas:</h3>
+                <ul id="alertList"></ul>
+            </div>
+            
+            <div class="analisis-footer animate__animated animate__fadeInUp">
+                <div class="collaboration-notice">
+                    <i class="fas fa-users"></i> <span id="collaborators">1 usuario activo</span>
+                </div>
+                <button id="refreshDataBtn" class="refresh-btn">
+                    <i class="fas fa-sync-alt"></i> Actualizar Datos
+                </button>
+            </div>
+        </main>
+        
+        <button id="backBtn" class="back-btn animate__animated animate__fadeInLeft">
+            <i class="fas fa-arrow-left"></i> Volver
+        </button>
+        <button id="generateReportBtn" class="floating-btn animate__animated animate__pulse">
+            <i class="fas fa-file-pdf"></i> Generar Reporte
+        </button>
+    </section>
+
+    <!-- Interfaz Reportes -->
+    <section id="reportesSection" class="container reports-section">
+        <header class="top-bar">
+            <div class="logo-container">
+                <img src="assets/logo.jpeg" alt="Logo" class="logo small-logo">
+                <span>Generación de Reportes</span>
+            </div>
+            <div class="user-menu">
+                <button class="menu-button" id="userBtnReportes"><i class="fas fa-user-circle"></i></button>
+                <div id="dropdownMenuReportes" class="dropdown">
+                    <a href="#" id="presupuestoLinkReportes"><i class="fas fa-file-import"></i> Presupuesto</a>
+                    <a href="#" id="analisisLinkReportes"><i class="fas fa-chart-bar"></i> Análisis</a>
+                    <a href="#" id="logoutLinkReportes"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
+                </div>
+            </div>
+        </header>
+
+        <main class="reportes-content">
+            <div class="about-section animate__animated animate__fadeIn">
+                <h1>Generación de Reportes</h1>
+                <div class="tabs">
+                    <button class="tab-button active" data-tab="mision">Misión</button>
+                    <button class="tab-button" data-tab="vision">Visión</button>
+                    <button class="tab-button" data-tab="equipo">Equipo</button>
+                </div>
+                
+                <div class="tab-content active" id="mision">
+                    <p>Optimizar la gestión de proyectos mediante análisis de costos en tiempo real.</p>
+                </div>
+                <div class="tab-content" id="vision">
+                    <p>Ser el sistema líder en control presupuestario para proyectos de construcción.</p>
+                </div>
+                <div class="tab-content" id="equipo">
+                    <div class="team-member">
+                        <img src="assets/avatar1.jpg" alt="Tu Nombre">
+                        <h4>Tu Nombre</h4>
+                        <p>Desarrollador Full-Stack</p>
+                    </div>
+                    <div class="team-member">
+                        <img src="assets/avatar2.jpg" alt="Tu Amiga">
+                        <h4>Tu Amiga</h4>
+                        <p>Analista de Datos</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chart-container animate__animated animate__fadeInUp">
+                <h2><i class="fas fa-project-diagram"></i> Curva S de Avance</h2>
+                <canvas id="sCurveChart"></canvas>
+            </div>
+            
+            <div class="chart-container animate__animated animate__fadeInUp">
+                <h2><i class="fas fa-chart-bar"></i> Comparación por Partida</h2>
+                <canvas id="comparacionChart"></canvas>
+            </div>
+            
+            <div class="reportes-actions animate__animated animate__fadeInUp">
+                <button id="volverBtn" class="action-btn">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+                <button id="exportPdfBtn" class="action-btn">
+                    <i class="fas fa-file-pdf"></i> Exportar como PDF
+                </button>
+                <button id="sendEmailBtn" class="action-btn">
+                    <i class="fas fa-envelope"></i> Enviar por Email
+                </button>
+            </div>
+        </main>
+    </section>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
