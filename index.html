@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App NANGHI</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <!-- Interfaz Login -->
+  <section id="loginSection" class="login-container">
+    <div class="login-box">
+      <div class="login-header">
+        <img src="assets/logo.jpeg" alt="Logo" class="logo">
+        <h2>Iniciar sesión</h2>
+      </div>
+      <form id="loginForm">
+        <input type="email" id="loginEmail" placeholder="Correo electrónico" required>
+        <input type="password" id="loginPassword" placeholder="Contraseña" required>
+        <button type="submit">Iniciar sesión</button>
+      </form>
+      <div class="new-user">
+        <p>¿No tienes cuenta?</p>
+        <button id="registerBtn">Crear cuenta</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interfaz Carga Presupuesto -->
+  <section id="presupuestoSection" class="container">
+    <header class="top-bar">
+      <div class="logo-container">
+        <img src="assets/logo.jpeg" alt="Logo" class="logo">
+        <span>Cargar presupuesto</span>
+      </div>
+      <div class="user-menu">
+        <button class="menu-button" id="userBtn">👤</button>
+        <button class="menu-button" id="menuBtn">☰</button>
+        <div id="dropdownMenu" class="dropdown">
+          <a href="#" id="analisisLink">Análisis</a>
+          <a href="#" id="reportesLink">Reportes</a>
+          <a href="#" id="logoutLink">Cerrar sesión</a>
+        </div>
+      </div>
+    </header>
+    
+    <main class="content">
+      <h1>Cargar presupuesto</h1>
+      <div class="button-group">
+        <button class="download-btn" id="downloadTemplate">Descargar plantilla</button>
+        <label class="upload-btn">
+          <input type="file" id="excelInput" accept=".xlsx,.xls" hidden>
+          Subir archivo Excel
+        </label>
+        <button class="google-btn" id="googleSheetsBtn">Conectar Google Sheets</button>
+      </div>
+    </main>
+
+    <!-- Modal para Excel -->
+    <div id="excelModal" class="modal">
+      <div class="modal-content">
+        <span class="close" id="closeModal">&times;</span>
+        <h3>Vista previa del archivo</h3>
+        <div id="excelPreview" class="excel-preview"></div>
+        <button class="generate-btn" id="generateAnalysis">Generar análisis</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interfaz Análisis -->
+  <section id="analisisSection" class="container analysis-section">
+    <header class="top-bar">
+      <div class="logo-container">
+        <img src="assets/logo.jpeg" alt="Logo" class="logo small-logo">
+        <span>Análisis de desviaciones</span>
+      </div>
+      <div class="user-menu">
+        <button class="menu-button" id="userBtnAnalisis">👤</button>
+        <button class="menu-button" id="menuBtnAnalisis">☰</button>
+        <div id="dropdownMenuAnalisis" class="dropdown">
+          <a href="#" id="presupuestoLink">Presupuesto</a>
+          <a href="#" id="reportesLinkAnalisis">Reportes</a>
+          <a href="#" id="logoutLinkAnalisis">Cerrar sesión</a>
+        </div>
+      </div>
+    </header>
+    
+    <main class="analysis-content">
+      <h1>Análisis de desviaciones de costos</h1>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Ítems de costos</th>
+              <th>Planificado</th>
+              <th>Real</th>
+              <th>Desviación</th>
+            </tr>
+          </thead>
+          <tbody id="analisisTableBody"></tbody>
+        </table>
+      </div>
+      <div id="alertBox" class="alert-box"></div>
+    </main>
+    <button id="backBtn" class="back-btn">← Volver</button>
+    <button id="generateReportBtn" class="floating-btn">Generar Reporte</button>
+  </section>
+
+  <!-- Interfaz Reportes -->
+  <section id="reportesSection" class="container reportes-section">
+    <header class="top-bar">
+      <div class="logo-container">
+        <img src="assets/logo.jpeg" alt="Logo" class="logo small-logo">
+        <span>Generación de Reportes</span>
+      </div>
+      <div class="user-menu">
+        <button class="menu-button" id="userBtnReportes">👤</button>
+        <button class="menu-button" id="menuBtnReportes">☰</button>
+        <div id="dropdownMenuReportes" class="dropdown">
+          <a href="#" id="presupuestoLinkReportes">Presupuesto</a>
+          <a href="#" id="analisisLinkReportes">Análisis</a>
+          <a href="#" id="logoutLinkReportes">Cerrar sesión</a>
+        </div>
+      </div>
+    </header>
+    
+    <main class="reportes-content">
+      <h1>Generación de Reportes</h1>
+      <div class="chart-container">
+        <h2>Tendencia de Costos (Últimos 6 meses)</h2>
+        <canvas id="tendenciaChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <h2>Comparación por Partida</h2>
+        <canvas id="comparacionChart"></canvas>
+      </div>
+      <div class="reportes-actions">
+        <button id="volverBtn" class="action-btn">← Volver</button>
+        <button id="exportPdfBtn" class="action-btn">Exportar como PDF</button>
+      </div>
+    </main>
+  </section>
+
+  <script>
+    window.jsPDF = window.jspdf.jsPDF;
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+  <script src="script.js" defer></script>
+</body>
+</html>
